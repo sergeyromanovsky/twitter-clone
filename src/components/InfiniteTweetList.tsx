@@ -100,6 +100,14 @@ function TweetCard({
       };
 
       trpcUtils.tweet.infiniteFeed.setInfiniteData({}, updatedData);
+      trpcUtils.tweet.infiniteFeed.setInfiniteData(
+        { onlyFollowing: true },
+        updatedData
+      );
+      trpcUtils.tweet.infiniteProfileFeed.setInfiniteData(
+        { userId: user.id },
+        updatedData
+      );
     },
   });
 

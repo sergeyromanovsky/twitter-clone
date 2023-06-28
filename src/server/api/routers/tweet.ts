@@ -9,6 +9,24 @@ import {
 } from "~/server/api/trpc";
 
 export const tweetRouter = createTRPCRouter({
+  infiniteProfileFeed: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        limit: z.number().optional(),
+        cursor: z.object({ id: z.string(), createdAt: z.date() }).optional(),
+      })
+    )
+    .query(async ({ ctx, input: { userId, cursor, limit = 10 } }) => {
+      const data = await getInfiniteTweets({
+        ctx,
+        limit,
+        cursor,
+        whereClause: { userId },
+      });
+
+      return data;
+    }),
   infiniteFeed: publicProcedure
     .input(
       z.object({
@@ -35,12 +53,16 @@ export const tweetRouter = createTRPCRouter({
   create: protectedProcedure
     .input(z.object({ content: z.string() }))
     .mutation(async ({ input: { content }, ctx }) => {
-      return await ctx.prisma.tweet.create({
+      const tweet = await ctx.prisma.tweet.create({
         data: {
           content,
           userId: ctx.session.user.id,
         },
       });
+
+      void ctx.revalidateSSG?.(`/profiles/${ctx.session.user.id}`);
+
+      return tweet;
     }),
   toggleLike: protectedProcedure
     .input(z.object({ id: z.string() }))
